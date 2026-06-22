@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#2b3a4a">
+<title>Courage Loop</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Courage Loop">
+<style>
+  :root{
+    --ink:#26323d;
+    --ink-soft:#5a6b78;
+    --ink-faint:#8a99a4;
+    --paper:#f3efe7;
+    --paper-raised:#fbf9f4;
+    --line:#ddd6c8;
+    --slate:#2b3a4a;
+    --slate-deep:#1f2a36;
+    --sky:#3f7d8c;
+    --sky-soft:#e3eef0;
+    --amber:#c98a3c;
+    --amber-soft:#f6ead6;
+    --sage:#6f9d76;
+    --sage-soft:#e6f0e6;
+    --clay:#b9685a;
+    --clay-soft:#f5e2de;
+    --shadow:0 1px 2px rgba(31,42,54,.04),0 8px 24px rgba(31,42,54,.07);
+    --shadow-lift:0 2px 6px rgba(31,42,54,.08),0 18px 40px rgba(31,42,54,.12);
+    --r:18px;
+    --r-sm:12px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Iowan Old Style','Palatino Linotype',Palatino,Georgia,serif;
+    background:var(--paper);
+    color:var(--ink);
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  .ui{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,system-ui,sans-serif;}
+
+  /* ---------- shell ---------- */
+  #app{
+    max-width:560px;margin:0 auto;min-height:100vh;
+    min-height:100dvh;
+    padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+    display:flex;flex-direction:column;position:relative;
+  }
+  .screen{
+    flex:1;display:none;flex-direction:column;
+    padding:22px 22px 120px;
+    animation:rise .42s cubic-bezier(.2,.7,.3,1);
+  }
+  .screen.active{display:flex;}
+  @keyframes rise{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+  @media (prefers-reduced-motion:reduce){
+    .screen,.card,.fab,.chip{animation:none!important;transition:none!important;}
+  }
+
+  /* ---------- typography ---------- */
+  .eyebrow{
+    font-family:-apple-system,system-ui,sans-serif;
+    font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--ink-faint);margin:0 0 6px;
+  }
+  h1{font-size:30px;line-height:1.12;font-weight:600;margin:0 0 6px;letter-spacing:-.01em;}
+  h2{font-size:22px;font-weight:600;margin:0 0 4px;letter-spacing:-.01em;}
+  .lede{color:var(--ink-soft);font-size:16px;margin:0 0 20px;}
+  .quiet{color:var(--ink-soft);}
+
+  /* ---------- top bar ---------- */
+  .bar{
+    display:flex;align-items:center;gap:10px;margin:6px 0 20px;min-height:32px;
+  }
+  .back{
+    font-family:-apple-system,system-ui,sans-serif;
+    background:none;border:none;color:var(--sky);font-size:15px;font-weight:600;
+    padding:6px 2px;cursor:pointer;display:flex;align-items:center;gap:4px;
+  }
+  .back:active{opacity:.6;}
+  .step-dots{display:flex;gap:6px;margin-left:auto;}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--line);transition:all .3s;}
+  .dot.on{background:var(--slate);width:20px;border-radius:4px;}
+
+  /* ---------- buttons ---------- */
+  .btn{
+    font-family:-apple-system,system-ui,sans-serif;
+    font-size:17px;font-weight:600;border:none;border-radius:var(--r-sm);
+    padding:16px 20px;cursor:pointer;width:100%;transition:transform .12s,box-shadow .2s,background .2s;
+  }
+  .btn:active{transform:scale(.985);}
+  .btn-primary{background:var(--slate);color:#fff;box-shadow:var(--shadow);}
+  .btn-primary:active{background:var(--slate-deep);}
+  .btn-ghost{background:transparent;color:var(--ink-soft);border:1.5px solid var(--line);}
+  .btn-row{display:flex;gap:10px;}
+
+  /* sticky footer action */
+  .foot{
+    position:fixed;left:0;right:0;bottom:0;z-index:30;
+    padding:14px 22px calc(14px + env(safe-area-inset-bottom));
+    background:linear-gradient(180deg,rgba(243,239,231,0) 0%,var(--paper) 36%);
+    max-width:560px;margin:0 auto;pointer-events:none;
+  }
+  .foot .btn{pointer-events:auto;}
+  .foot .hint{
+    pointer-events:none;text-align:center;font-family:-apple-system,system-ui,sans-serif;
+    font-size:13px;color:var(--ink-faint);margin:0 0 10px;min-height:16px;
+  }
+
+  /* ---------- cards / chips ---------- */
+  .card{
+    background:var(--paper-raised);border:1px solid var(--line);border-radius:var(--r);
+    padding:18px;box-shadow:var(--shadow);
+  }
+  .card+.card{margin-top:12px;}
+
+  .chip{
+    font-family:-apple-system,system-ui,sans-serif;
+    display:flex;align-items:center;gap:10px;width:100%;text-align:left;
+    background:var(--paper-raised);border:1.5px solid var(--line);border-radius:var(--r-sm);
+    padding:14px 16px;font-size:16px;color:var(--ink);cursor:pointer;
+    transition:transform .12s,border-color .2s,background .2s,box-shadow .2s;
+  }
+  .chip:active{transform:scale(.98);}
+  .chip.sel{border-color:var(--slate);background:#fff;box-shadow:var(--shadow);}
+  .chip .tick{
+    margin-left:auto;width:22px;height:22px;border-radius:50%;border:1.5px solid var(--line);
+    display:grid;place-items:center;flex:none;transition:all .2s;
+  }
+  .chip.sel .tick{background:var(--slate);border-color:var(--slate);}
+  .chip.sel .tick svg{opacity:1;transform:scale(1);}
+  .chip .tick svg{opacity:0;transform:scale(.4);transition:all .2s;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .grid2 .chip{justify-content:flex-start;}
+
+  .seg{display:flex;gap:8px;}
+  .seg button{
+    font-family:-apple-system,system-ui,sans-serif;
+    flex:1;padding:12px 8px;border-radius:var(--r-sm);border:1.5px solid var(--line);
+    background:var(--paper-raised);color:var(--ink-soft);font-size:15px;font-weight:600;cursor:pointer;
+    transition:all .18s;
+  }
+  .seg button.sel{background:var(--slate);color:#fff;border-color:var(--slate);}
+
+  textarea,input[type=text]{
+    font-family:'Iowan Old Style',Georgia,serif;font-size:16px;color:var(--ink);
+    width:100%;border:1.5px solid var(--line);border-radius:var(--r-sm);
+    padding:14px;background:var(--paper-raised);resize:none;line-height:1.5;
+  }
+  textarea:focus,input:focus{outline:none;border-color:var(--sky);background:#fff;}
+
+  /* ---------- certainty slider ---------- */
+  .gauge{text-align:center;padding:8px 0 4px;}
+  .gauge .num{
+    font-size:72px;font-weight:600;letter-spacing:-.03em;line-height:1;
+    color:var(--slate);transition:color .3s;
+  }
+  .gauge .pct{font-size:28px;color:var(--ink-faint);}
+  .gauge .word{
+    font-family:-apple-system,system-ui,sans-serif;font-size:14px;font-weight:600;
+    letter-spacing:.04em;color:var(--ink-soft);margin-top:6px;min-height:20px;
+  }
+  input[type=range]{
+    -webkit-appearance:none;appearance:none;width:100%;height:8px;border-radius:99px;
+    background:linear-gradient(90deg,var(--sky) 0%,var(--sky) var(--fill,50%),var(--line) var(--fill,50%));
+    margin:22px 0 6px;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:32px;height:32px;border-radius:50%;background:#fff;
+    border:3px solid var(--slate);box-shadow:var(--shadow-lift);cursor:pointer;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:32px;height:32px;border-radius:50%;background:#fff;border:3px solid var(--slate);
+    box-shadow:var(--shadow-lift);cursor:pointer;
+  }
+  .scale-row{display:flex;justify-content:space-between;font-family:-apple-system,system-ui,sans-serif;
+    font-size:12px;color:var(--ink-faint);}
+
+  /* ---------- home ---------- */
+  .home-head{display:flex;align-items:flex-end;justify-content:space-between;margin:6px 0 22px;}
+  .logo{display:flex;align-items:center;gap:10px;}
+  .logo .mark{
+    width:38px;height:38px;border-radius:11px;background:var(--slate);
+    display:grid;place-items:center;flex:none;box-shadow:var(--shadow);
+  }
+  .logo .mark svg{display:block;}
+  .logo .name{font-size:19px;font-weight:600;letter-spacing:-.01em;}
+  .logo .name small{display:block;font-family:-apple-system,system-ui,sans-serif;
+    font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint);}
+  .iconbtn{
+    background:var(--paper-raised);border:1px solid var(--line);border-radius:11px;
+    width:38px;height:38px;display:grid;place-items:center;cursor:pointer;color:var(--ink-soft);
+  }
+  .iconbtn:active{background:#fff;}
+
+  .tally{
+    background:var(--slate);color:#fff;border-radius:var(--r);padding:20px;margin-bottom:8px;
+    box-shadow:var(--shadow-lift);position:relative;overflow:hidden;
+  }
+  .tally .glow{position:absolute;right:-40px;top:-40px;width:160px;height:160px;border-radius:50%;
+    background:radial-gradient(circle,rgba(63,125,140,.5),transparent 70%);}
+  .tally .big{font-size:44px;font-weight:600;line-height:1;letter-spacing:-.02em;position:relative;}
+  .tally .big small{font-size:18px;color:rgba(255,255,255,.6);font-weight:400;}
+  .tally .cap{font-family:-apple-system,system-ui,sans-serif;font-size:13px;
+    color:rgba(255,255,255,.78);margin-top:8px;position:relative;line-height:1.4;}
+
+  .sec-label{
+    font-family:-apple-system,system-ui,sans-serif;font-size:12px;font-weight:700;
+    letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint);
+    margin:24px 2px 12px;display:flex;align-items:center;gap:8px;
+  }
+  .sec-label .count{background:var(--line);color:var(--ink-soft);border-radius:99px;
+    padding:1px 8px;font-size:11px;letter-spacing:.04em;}
+
+  .event{
+    display:flex;align-items:center;gap:14px;width:100%;text-align:left;
+    background:var(--paper-raised);border:1px solid var(--line);border-radius:var(--r);
+    padding:16px;margin-bottom:10px;cursor:pointer;box-shadow:var(--shadow);
+    transition:transform .12s,box-shadow .2s;
+  }
+  .event:active{transform:scale(.99);}
+  .event .face{
+    width:44px;height:44px;border-radius:12px;flex:none;display:grid;place-items:center;
+    font-size:20px;
+  }
+  .event .body{flex:1;min-width:0;}
+  .event .ttl{font-size:17px;font-weight:600;line-height:1.25;}
+  .event .meta{font-family:-apple-system,system-ui,sans-serif;font-size:13px;color:var(--ink-faint);margin-top:3px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .event .arrow{color:var(--ink-faint);flex:none;}
+  .pill{
+    font-family:-apple-system,system-ui,sans-serif;font-size:11px;font-weight:700;
+    padding:4px 9px;border-radius:99px;letter-spacing:.03em;flex:none;
+  }
+  .pill.wait{background:var(--amber-soft);color:var(--amber);}
+  .pill.done{background:var(--sage-soft);color:var(--sage);}
+
+  .empty{text-align:center;padding:40px 20px;color:var(--ink-faint);
+    font-family:-apple-system,system-ui,sans-serif;font-size:14px;}
+  .empty .e-mark{font-size:34px;margin-bottom:10px;opacity:.7;}
+
+  /* ---------- review contrast (signature) ---------- */
+  .contrast{margin:4px 0 0;}
+  .cx{
+    background:var(--paper-raised);border:1px solid var(--line);border-radius:var(--r);
+    padding:16px 18px;margin-bottom:12px;box-shadow:var(--shadow);overflow:hidden;
+    animation:cxin .5s both;
+  }
+  @keyframes cxin{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+  .cx .label{font-family:-apple-system,system-ui,sans-serif;font-size:12px;font-weight:700;
+    letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:10px;}
+  .cx .lines{display:flex;align-items:stretch;gap:12px;}
+  .cx .col{flex:1;}
+  .cx .col .h{font-family:-apple-system,system-ui,sans-serif;font-size:11px;font-weight:700;
+    letter-spacing:.06em;text-transform:uppercase;margin-bottom:5px;}
+  .cx .feared .h{color:var(--clay);}
+  .cx .real .h{color:var(--sage);}
+  .cx .col .v{font-size:16px;line-height:1.35;}
+  .cx .divider{width:1px;background:var(--line);flex:none;}
+  .cx.win{border-color:var(--sage);background:linear-gradient(180deg,var(--sage-soft) 0%,var(--paper-raised) 60%);}
+  .verdict{
+    font-family:-apple-system,system-ui,sans-serif;display:inline-flex;align-items:center;gap:6px;
+    font-size:12px;font-weight:700;margin-top:12px;padding:5px 10px;border-radius:99px;
+  }
+  .verdict.win{background:var(--sage);color:#fff;}
+  .verdict.partly{background:var(--amber);color:#fff;}
+  .verdict.true{background:var(--clay-soft);color:var(--clay);}
+
+  .headline-card{
+    background:var(--slate);color:#fff;border-radius:var(--r);padding:22px;margin-bottom:14px;
+    box-shadow:var(--shadow-lift);position:relative;overflow:hidden;
+  }
+  .headline-card .glow{position:absolute;left:-30px;bottom:-50px;width:180px;height:180px;border-radius:50%;
+    background:radial-gradient(circle,rgba(111,157,118,.45),transparent 70%);}
+  .headline-card .k{font-family:-apple-system,system-ui,sans-serif;font-size:12px;font-weight:700;
+    letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.6);margin-bottom:8px;position:relative;}
+  .headline-card .big{font-size:26px;font-weight:600;line-height:1.2;position:relative;letter-spacing:-.01em;}
+  .headline-card .big b{color:#8fd4a0;font-weight:600;}
+
+  /* bias list */
+  .bias-item{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--line);}
+  .bias-item:last-child{border-bottom:none;}
+  .bias-item .bdot{width:8px;height:8px;border-radius:50%;background:var(--clay);margin-top:7px;flex:none;}
+  .bias-item .bdot.ok{background:var(--sage);}
+  .bias-item .btext{font-size:15px;line-height:1.4;}
+
+  /* toast */
+  #toast{
+    position:fixed;left:50%;bottom:96px;transform:translateX(-50%) translateY(20px);
+    background:var(--slate-deep);color:#fff;font-family:-apple-system,system-ui,sans-serif;
+    font-size:14px;font-weight:500;padding:12px 18px;border-radius:99px;box-shadow:var(--shadow-lift);
+    opacity:0;pointer-events:none;transition:all .3s;z-index:60;max-width:90%;text-align:center;
+  }
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  /* modal */
+  .modal-bg{position:fixed;inset:0;background:rgba(31,42,54,.4);backdrop-filter:blur(3px);
+    z-index:50;display:none;align-items:flex-end;justify-content:center;}
+  .modal-bg.show{display:flex;animation:fade .25s;}
+  @keyframes fade{from{opacity:0;}to{opacity:1;}}
+  .sheet{
+    background:var(--paper);width:100%;max-width:560px;border-radius:22px 22px 0 0;padding:24px 22px;
+    padding-bottom:calc(24px + env(safe-area-inset-bottom));box-shadow:0 -10px 40px rgba(0,0,0,.2);
+    animation:slideup .32s cubic-bezier(.2,.7,.3,1);
+  }
+  @keyframes slideup{from{transform:translateY(100%);}to{transform:none;}}
+  .sheet h2{margin-bottom:14px;}
+  .sheet .row{display:flex;gap:10px;margin-top:8px;}
+
+  .addchip{
+    display:flex;align-items:center;justify-content:center;gap:7px;width:100%;
+    border:1.5px dashed var(--line);background:transparent;color:var(--ink-soft);
+    border-radius:var(--r-sm);padding:13px;font-family:-apple-system,system-ui,sans-serif;
+    font-size:15px;font-weight:600;cursor:pointer;margin-top:10px;
+  }
+  .addchip:active{background:var(--paper-raised);}
+
+  .commit-quote{
+    background:var(--sky-soft);border-left:3px solid var(--sky);border-radius:0 var(--r-sm) var(--r-sm) 0;
+    padding:16px 18px;font-size:16px;line-height:1.5;color:var(--ink);margin:4px 0 0;
+  }
+  .field-label{font-family:-apple-system,system-ui,sans-serif;font-size:13px;font-weight:700;
+    letter-spacing:.04em;color:var(--ink-soft);margin:0 0 8px;text-transform:uppercase;}
+  .stack>*+*{margin-top:18px;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ============ HOME ============ -->
+  <section id="s-home" class="screen active">
+    <div class="home-head">
+      <div class="logo">
+        <div class="mark">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <path d="M12 3l1.8 5.6h5.9l-4.8 3.5 1.8 5.6L12 14.7l-4.8 3.6 1.8-5.6L4.3 8.6h5.9z"
+              fill="#3f7d8c" stroke="#fff" stroke-width="1" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="name">Courage Loop<small>Predict · Test · Compare</small></div>
+      </div>
+      <button class="iconbtn" onclick="openSettings()" aria-label="Settings">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="tally" id="tallyCard">
+      <div class="glow"></div>
+      <div class="big" id="tallyBig">—</div>
+      <div class="cap" id="tallyCap">Your evidence pile starts with your first event.</div>
+    </div>
+
+    <div id="waitingSection"></div>
+    <div id="doneSection"></div>
+  </section>
+
+  <!-- ============ PREPARE: pick event ============ -->
+  <section id="s-event" class="screen">
+    <div class="bar">
+      <button class="back" onclick="go('home')">‹ Home</button>
+      <div class="step-dots"><span class="dot on"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+    </div>
+    <p class="eyebrow">Prepare · Step 1 of 4</p>
+    <h1>What's coming up?</h1>
+    <p class="lede">Pick the event you're anticipating.</p>
+    <div id="eventGrid" class="stack"></div>
+  </section>
+
+  <!-- ============ PREPARE: predictions ============ -->
+  <section id="s-predict" class="screen">
+    <div class="bar">
+      <button class="back" onclick="go('event')">‹ Back</button>
+      <div class="step-dots"><span class="dot"></span><span class="dot on"></span><span class="dot"></span><span class="dot"></span></div>
+    </div>
+    <p class="eyebrow">Prepare · Step 2 of 4</p>
+    <h1>What does the fear say?</h1>
+    <p class="lede">Tap every prediction your mind is making. Naming them is how we test them later.</p>
+    <div id="predictGrid" class="stack"></div>
+    <button class="addchip" onclick="addCustom('predict')">+ Add your own</button>
+  </section>
+
+  <!-- ============ PREPARE: certainty ============ -->
+  <section id="s-certain" class="screen">
+    <div class="bar">
+      <button class="back" onclick="go('predict')">‹ Back</button>
+      <div class="step-dots"><span class="dot"></span><span class="dot"></span><span class="dot on"></span><span class="dot"></span></div>
+    </div>
+    <p class="eyebrow">Prepare · Step 3 of 4</p>
+    <h1>How sure are you?</h1>
+    <p class="lede">Right now, how certain does it feel that this will go badly?</p>
+
+    <div class="card">
+      <div class="gauge">
+        <div><span class="num" id="cNum">50</span><span class="pct">%</span></div>
+        <div class="word" id="cWord">Genuinely unsure</div>
+      </div>
+      <input type="range" id="cSlider" min="0" max="100" value="50" step="5"
+        oninput="onCertain(this.value)" aria-label="Certainty percent">
+      <div class="scale-row"><span>Won't happen</span><span>Dead certain</span></div>
+    </div>
+
+    <div style="margin-top:18px">
+      <p class="field-label">Is that a thought, a feeling, or a sense?</p>
+      <div class="seg" id="modeSeg">
+        <button onclick="setMode('think',this)">I think it</button>
+        <button onclick="setMode('feel',this)">I feel it</button>
+        <button onclick="setMode('sense',this)">I sense it</button>
+      </div>
+      <p class="quiet ui" style="font-size:13px;margin:10px 2px 0" id="modeNote"></p>
+    </div>
+  </section>
+
+  <!-- ============ PREPARE: commit ============ -->
+  <section id="s-commit" class="screen">
+    <div class="bar">
+      <button class="back" onclick="go('certain')">‹ Back</button>
+      <div class="step-dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot on"></span></div>
+    </div>
+    <p class="eyebrow">Prepare · Step 4 of 4</p>
+    <h1>Commit to showing up.</h1>
+    <p class="lede">Not to doing it perfectly. Just to being there.</p>
+
+    <div class="commit-quote">
+      Even if part of you is sure it'll be terrible — that part has been wrong before, and you're about to gather the proof. Every time you show up, you learn something the fear can't.
+    </div>
+
+    <div style="margin-top:22px">
+      <p class="field-label">How much courage will this take?</p>
+      <div class="seg" id="courageSeg">
+        <button onclick="setCourage(1,this)">A little</button>
+        <button onclick="setCourage(2,this)">Some</button>
+        <button onclick="setCourage(3,this)">A lot</button>
+        <button onclick="setCourage(4,this)">Huge</button>
+      </div>
+    </div>
+
+    <div style="margin-top:22px">
+      <p class="field-label">Anything you want to remember going in? (optional)</p>
+      <textarea id="commitNote" rows="3" placeholder="A note to yourself for the moment…"></textarea>
+    </div>
+  </section>
+
+  <!-- ============ REVIEW: outcome ============ -->
+  <section id="s-review" class="screen">
+    <div class="bar">
+      <button class="back" onclick="go('home')">‹ Home</button>
+      <div class="step-dots"><span class="dot on"></span><span class="dot"></span><span class="dot"></span></div>
+    </div>
+    <p class="eyebrow" id="revEyebrow">Review · Step 1 of 3</p>
+    <h1>You showed up.</h1>
+    <p class="lede" id="revLede">For each thing the fear predicted — what actually happened?</p>
+    <div id="outcomeGrid" class="stack"></div>
+  </section>
+
+  <!-- ============ REVIEW: evidence ============ -->
+  <section id="s-evidence" class="screen">
+    <div class="bar">
+      <button class="back" onclick="go('review')">‹ Back</button>
+      <div class="step-dots"><span class="dot"></span><span class="dot on"></span><span class="dot"></span></div>
+    </div>
+    <p class="eyebrow">Review · Step 2 of 3</p>
+    <h1>What's your evidence?</h1>
+    <p class="lede">How do you actually know how it went? Tap what's true.</p>
+    <div id="evidenceGrid" class="stack"></div>
+    <div style="margin-top:18px">
+      <p class="field-label">In a sentence — what actually happened?</p>
+      <textarea id="realityNote" rows="3" placeholder="The reality was…"></textarea>
+    </div>
+  </section>
+
+  <!-- ============ REVIEW: bias ============ -->
+  <section id="s-bias" class="screen">
+    <div class="bar">
+      <button class="back" onclick="go('evidence')">‹ Back</button>
+      <div class="step-dots"><span class="dot"></span><span class="dot"></span><span class="dot on"></span></div>
+    </div>
+    <p class="eyebrow">Review · Step 3 of 3</p>
+    <h1>Did the fear bend the truth?</h1>
+    <p class="lede">Tap any that ring true. No judgement — this is just data.</p>
+    <div id="biasGrid" class="stack"></div>
+  </section>
+
+  <!-- ============ THE FINDING ============ -->
+  <section id="s-finding" class="screen">
+    <div class="bar">
+      <div class="step-dots" style="margin-left:0"></div>
+      <button class="back" style="margin-left:auto" onclick="go('home')">Done ›</button>
+    </div>
+    <p class="eyebrow">The Finding</p>
+    <div id="findingBody"></div>
+  </section>
+
+</div>
+
+<div id="toast"></div>
+
+<!-- add-custom / settings sheet -->
+<div class="modal-bg" id="modal">
+  <div class="sheet" id="sheetInner"></div>
+</div>
+
+<script>
+/* ============================================================
+   COURAGE LOOP — local-first PWA. All data stays on this device.
+   ============================================================ */
+const DB_KEY='courageloop.v1';
+let DB={events:[]};
+let draft=null;        // prepare draft
+let review=null;       // review draft
+let current=null;      // event being reviewed
+
+/* ---- seed libraries (from your slides) ---- */
+const EVENT_TYPES=[
+  {t:'First day at work',e:'🌅'},
+  {t:'Attending a meeting',e:'💬'},
+  {t:'Attending training',e:'📋'},
+  {t:'Facilitating a meeting',e:'🎤'},
+  {t:'Facilitating training',e:'🧑‍🏫'},
+  {t:'Working in the office',e:'🏢'},
+  {t:'Meeting new people',e:'🤝'},
+  {t:'Learning new skills',e:'🌱'},
+  {t:'Doing introductions',e:'🙋'},
+];
+const PREDICTIONS=[
+  "I'll avoid looking people in the eye",
+  "My voice will be wobbly",
+  "I'll stutter",
+  "I'll joke and deflect",
+  "I'll over-apologise",
+  "I won't be able to answer questions",
+  "I'll panic",
+  "I'll forget basic information",
+  "I'll fidget",
+  "They'll think I'm a fraud",
+  "I'll make myself small",
+];
+const EVIDENCE=[
+  "I got verbal feedback",
+  "I noticed it from those around me",
+  "I got feedback in writing",
+  "I saw a video / audio of myself",
+  "Nobody reacted the way I feared",
+  "I'm guessing from my own feelings",
+];
+const BIASES=[
+  {t:"I looked for evidence that wasn't there",bad:true},
+  {t:"I imagined things that may not have happened",bad:true},
+  {t:"I misread neutral signals as negative",bad:true},
+  {t:"I judged myself harder than I'd judge anyone else",bad:true},
+  {t:"My estimate of the evidence was actually valid",bad:false},
+];
+const WORDS=[[0,"Won't happen"],[15,"Pretty unlikely"],[35,"Maybe"],[50,"Genuinely unsure"],
+  [65,"Probably"],[80,"Quite sure"],[95,"Almost certain"],[100,"Dead certain"]];
+const MODE_NOTES={
+  think:"A thought can be examined. We'll check it against what actually happens.",
+  feel:"Felt-certainty is exactly what anxiety inflates. It feels like 90% — let's see what the evidence says.",
+  sense:"A sense is a hunch, not a fact. Worth testing rather than trusting."
+};
+
+/* ---- storage ---- */
+function load(){try{const r=localStorage.getItem(DB_KEY);if(r)DB=JSON.parse(r);}catch(e){}}
+function save(){try{localStorage.setItem(DB_KEY,JSON.stringify(DB));}catch(e){toast("Couldn't save — storage may be full");}}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+
+/* ---- navigation ---- */
+const SCREENS=['home','event','predict','certain','commit','review','evidence','bias','finding'];
+function go(name){
+  SCREENS.forEach(s=>document.getElementById('s-'+s).classList.remove('active'));
+  document.getElementById('s-'+name).classList.add('active');
+  document.getElementById('app').scrollTop=0;window.scrollTo(0,0);
+  if(name==='home')renderHome();
+}
+
+/* ---- toast ---- */
+let tT;function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  clearTimeout(tT);tT=setTimeout(()=>t.classList.remove('show'),2400);}
+
+/* ============ HOME ============ */
+function renderHome(){
+  const evs=DB.events;
+  const waiting=evs.filter(e=>e.status==='waiting');
+  const done=evs.filter(e=>e.status==='done');
+
+  // tally — the running evidence pile
+  const big=document.getElementById('tallyBig'),cap=document.getElementById('tallyCap');
+  if(done.length===0){
+    big.innerHTML='Ready';
+    cap.textContent='Your evidence pile starts with your first event. Prepare for something coming up.';
+  }else{
+    let feared=0,came=0;
+    done.forEach(e=>{(e.outcomes||[]).forEach(o=>{feared++;if(o.result==='happened')came++;});});
+    const pct=feared?Math.round((came/feared)*100):0;
+    big.innerHTML=`${100-pct}<small>% of feared things didn't happen</small>`;
+    cap.textContent=`Across ${done.length} event${done.length>1?'s':''}, your mind predicted ${feared} bad outcome${feared>1?'s':''}. ${came===0?'None came true.':came+' came true.'} The fear is a worse forecaster than it thinks.`;
+  }
+
+  // waiting list
+  const ws=document.getElementById('waitingSection');
+  if(waiting.length){
+    ws.innerHTML=`<div class="sec-label">Waiting to review <span class="count">${waiting.length}</span></div>`+
+      waiting.map(eventRow).join('');
+  }else ws.innerHTML='';
+
+  // done list
+  const ds=document.getElementById('doneSection');
+  if(done.length){
+    ds.innerHTML=`<div class="sec-label">Reviewed <span class="count">${done.length}</span></div>`+
+      done.slice().reverse().map(eventRow).join('');
+  }else if(!waiting.length){
+    ds.innerHTML=`<div class="empty"><div class="e-mark">✦</div>Nothing here yet.<br>When something's coming up that makes you anxious, prepare for it below.</div>`;
+  }else ds.innerHTML='';
+}
+function faceColor(e){
+  if(e.status==='waiting')return['var(--amber-soft)','var(--amber)'];
+  // done — win if most feared things didn't happen
+  const o=e.outcomes||[];const came=o.filter(x=>x.result==='happened').length;
+  if(came===0)return['var(--sage-soft)','var(--sage)'];
+  if(came<o.length)return['var(--amber-soft)','var(--amber)'];
+  return['var(--clay-soft)','var(--clay)'];
+}
+function eventRow(e){
+  const[bg,fg]=faceColor(e);
+  const pill=e.status==='waiting'
+    ?`<span class="pill wait">Prepared</span>`
+    :`<span class="pill done">Reviewed</span>`;
+  let meta;
+  if(e.status==='waiting'){
+    meta=`${e.certainty}% sure · ${e.predictions.length} prediction${e.predictions.length!==1?'s':''}`;
+  }else{
+    const o=e.outcomes||[];const came=o.filter(x=>x.result==='happened').length;
+    meta=came===0?`Feared ${o.length}, none happened`:`${came} of ${o.length} feared things happened`;
+  }
+  return `<button class="event" onclick="openEvent('${e.id}')">
+    <div class="face" style="background:${bg};color:${fg}">${e.emoji||'✦'}</div>
+    <div class="body"><div class="ttl">${esc(e.title)}</div><div class="meta">${meta}</div></div>
+    ${pill}
+    <svg class="arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+  </button>`;
+}
+function openEvent(id){
+  const e=DB.events.find(x=>x.id===id);if(!e)return;
+  if(e.status==='waiting'){startReview(e);}
+  else{current=e;showFinding(e);go('finding');}
+}
+
+/* ============ PREPARE FLOW ============ */
+function startPrepare(){
+  draft={id:uid(),title:'',emoji:'✦',predictions:[],certainty:50,mode:null,courage:null,commitNote:'',
+    created:Date.now(),status:'waiting'};
+  renderEventGrid();go('event');
+}
+function renderEventGrid(){
+  const g=document.getElementById('eventGrid');
+  g.innerHTML=EVENT_TYPES.map(ev=>chipHTML(ev.t,draft.title===ev.t,`pickEvent('${esc(ev.t)}','${ev.e}')`)).join('')
+    +`<button class="addchip" onclick="addCustom('event')">+ Something else</button>`;
+}
+function pickEvent(t,e){draft.title=t;draft.emoji=e;renderEventGrid();
+  setTimeout(()=>{renderPredict();go('predict');},180);}
+
+function renderPredict(){
+  const g=document.getElementById('predictGrid');
+  g.innerHTML=PREDICTIONS.map(p=>chipHTML(p,draft.predictions.includes(p),`togglePred(this,\`${p}\`)`)).join('');
+}
+function togglePred(el,p){
+  const i=draft.predictions.indexOf(p);
+  if(i>=0)draft.predictions.splice(i,1);else draft.predictions.push(p);
+  el.classList.toggle('sel');
+}
+
+function onCertain(v){
+  draft.certainty=+v;
+  document.getElementById('cNum').textContent=v;
+  document.getElementById('cSlider').style.setProperty('--fill',v+'%');
+  let w=WORDS[0][1];for(const[k,lab]of WORDS){if(v>=k)w=lab;}
+  document.getElementById('cWord').textContent=w;
+  const num=document.getElementById('cNum');
+  num.style.color=v>=70?'var(--clay)':v>=40?'var(--amber)':'var(--sage)';
+}
+function setMode(m,btn){draft.mode=m;
+  [...document.getElementById('modeSeg').children].forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+  document.getElementById('modeNote').textContent=MODE_NOTES[m];
+}
+function setCourage(c,btn){draft.courage=c;
+  [...document.getElementById('courageSeg').children].forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+}
+
+function finishPrepare(){
+  draft.commitNote=document.getElementById('commitNote').value.trim();
+  if(!draft.courage){toast("Pick how much courage this takes");return;}
+  DB.events.push(draft);save();
+  const c=draft.courage;draft=null;
+  go('home');
+  setTimeout(()=>toast(c>=3?"Logged. That took real courage to face.":"Logged. Come back and review it after."),250);
+}
+
+/* ============ REVIEW FLOW ============ */
+function startReview(e){
+  current=e;
+  review={outcomes:e.predictions.map(p=>({pred:p,result:null})),evidence:[],biases:[],realityNote:''};
+  renderOutcome();go('review');
+}
+function renderOutcome(){
+  const g=document.getElementById('outcomeGrid');
+  document.getElementById('revLede').textContent=
+    current.predictions.length?"For each thing the fear predicted — what actually happened?":"You had no specific predictions logged. How did it go overall?";
+  g.innerHTML=review.outcomes.map((o,i)=>`
+    <div class="card" style="padding:14px 16px">
+      <div style="font-size:16px;margin-bottom:12px">${esc(o.pred)}</div>
+      <div class="seg" data-i="${i}">
+        <button onclick="setOutcome(${i},'avoided',this)">Didn't happen</button>
+        <button onclick="setOutcome(${i},'partly',this)">A bit</button>
+        <button onclick="setOutcome(${i},'happened',this)">It happened</button>
+      </div>
+    </div>`).join('') ||
+    `<div class="card seg">
+      <button onclick="reviewOverall('good',this)">Better than feared</button>
+      <button onclick="reviewOverall('ok',this)">About as expected</button>
+      <button onclick="reviewOverall('bad',this)">Genuinely hard</button>
+    </div>`;
+}
+function setOutcome(i,val,btn){
+  review.outcomes[i].result=val;
+  [...btn.parentElement.children].forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+}
+function reviewOverall(v,btn){
+  [...btn.parentElement.children].forEach(b=>b.classList.remove('sel'));btn.classList.add('sel');
+  review.overall=v;
+}
+function renderEvidence(){
+  const g=document.getElementById('evidenceGrid');
+  g.innerHTML=EVIDENCE.map(ev=>chipHTML(ev,review.evidence.includes(ev),`toggleEvidence(this,\`${ev}\`)`)).join('');
+}
+function toggleEvidence(el,v){
+  const i=review.evidence.indexOf(v);if(i>=0)review.evidence.splice(i,1);else review.evidence.push(v);
+  el.classList.toggle('sel');
+}
+function renderBias(){
+  const g=document.getElementById('biasGrid');
+  g.innerHTML=BIASES.map((b,i)=>chipHTML(b.t,review.biases.includes(i),`toggleBias(this,${i})`)).join('');
+}
+function toggleBias(el,i){
+  const k=review.biases.indexOf(i);if(k>=0)review.biases.splice(k,1);else review.biases.push(i);
+  el.classList.toggle('sel');
+}
+function finishReview(){
+  review.realityNote=document.getElementById('realityNote').value.trim();
+  current.outcomes=review.outcomes;
+  current.evidence=review.evidence;
+  current.biases=review.biases;
+  current.realityNote=review.realityNote;
+  current.overall=review.overall||null;
+  current.status='done';
+  current.reviewed=Date.now();
+  save();
+  showFinding(current);go('finding');
+}
+
+/* ============ THE FINDING ============ */
+function showFinding(e){
+  const o=e.outcomes||[];
+  const came=o.filter(x=>x.result==='happened').length;
+  const partly=o.filter(x=>x.result==='partly').length;
+  const avoided=o.filter(x=>x.result==='avoided').length;
+  const total=o.length;
+
+  let headline,hk;
+  if(total===0){
+    hk="You showed up";headline=`You activated <b>courage</b> — and that's the whole win.`;
+  }else if(came===0){
+    hk="You were sure. You were wrong.";
+    headline=`You were <b>${e.certainty}% certain</b> it would go badly. <b>None</b> of the ${total} things you feared actually happened.`;
+  }else if(avoided>=came){
+    hk="The fear overstated it";
+    headline=`You feared ${total} things. <b>${avoided} didn't happen.</b> The fear was louder than the facts.`;
+  }else{
+    hk="You faced something real";
+    headline=`Some of it was genuinely hard — and you showed up anyway. That's <b>${courageWord(e.courage)}</b> courage, spent well.`;
+  }
+
+  let html=`<div class="headline-card"><div class="glow"></div>
+    <div class="k">${hk}</div><div class="big">${headline}</div></div>`;
+
+  // courage banner
+  if(e.courage){
+    html+=`<div class="card" style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+      <div style="font-size:26px">🔥</div>
+      <div><div style="font-weight:600">Courage activated — ${courageWord(e.courage)}</div>
+      <div class="quiet ui" style="font-size:13px">You committed despite ${e.certainty}% certainty it'd go wrong.</div></div></div>`;
+  }
+
+  // the signature contrast — predicted vs reality, side by side
+  if(total){
+    html+=`<div class="sec-label" style="margin-top:4px">You thought → What was real</div><div class="contrast">`;
+    o.forEach(item=>{
+      const win=item.result==='avoided';
+      const part=item.result==='partly';
+      const realTxt=win?"Didn't happen":part?"Happened a little":"It happened";
+      const vClass=win?'win':part?'partly':'true';
+      const vTxt=win?'Fear was wrong':part?'Overstated':'Came true';
+      html+=`<div class="cx ${win?'win':''}">
+        <div class="lines">
+          <div class="col feared"><div class="h">Fear predicted</div><div class="v">${esc(item.pred)}</div></div>
+          <div class="divider"></div>
+          <div class="col real"><div class="h">Reality</div><div class="v">${realTxt}</div></div>
+        </div>
+        <span class="verdict ${vClass}">${vTxt}</span>
+      </div>`;
+    });
+    html+=`</div>`;
+  }
+
+  // reality note
+  if(e.realityNote){
+    html+=`<div class="card" style="margin-top:14px"><p class="field-label">In your words</p>
+      <div style="font-size:16px;line-height:1.5">"${esc(e.realityNote)}"</div></div>`;
+  }
+
+  // bias findings
+  if(e.biases&&e.biases.length){
+    html+=`<div class="card" style="margin-top:14px"><p class="field-label">Where the fear bent the truth</p>`;
+    e.biases.forEach(i=>{const b=BIASES[i];
+      html+=`<div class="bias-item"><div class="bdot ${b.bad?'':'ok'}"></div><div class="btext">${esc(b.t)}</div></div>`;});
+    html+=`</div>`;
+  }
+
+  // evidence quality nudge
+  if(e.status==='done'){
+    const hardEv=(e.evidence||[]).some(x=>!x.startsWith("I'm guessing"));
+    if(!hardEv&&(e.evidence||[]).length){
+      html+=`<div class="card" style="margin-top:14px;border-color:var(--amber)">
+        <p class="field-label" style="color:var(--amber)">One honest note</p>
+        <div style="font-size:15px;line-height:1.5">Your read came from your own feelings, not outside feedback. That's exactly the channel anxiety distorts. Next time, try to catch one piece of real, external evidence — a word someone said, a face that didn't frown.</div></div>`;
+    }
+  }
+
+  html+=`<div style="margin-top:22px"><button class="btn btn-primary" onclick="go('home')">Back to home</button></div>`;
+  document.getElementById('findingBody').innerHTML=html;
+}
+function courageWord(c){return['','a little','some','a lot of','huge'][c||0];}
+
+/* ============ shared UI ============ */
+function chipHTML(label,sel,onclick){
+  return `<button class="chip ${sel?'sel':''}" onclick="${onclick}">
+    <span>${esc(label)}</span>
+    <span class="tick"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span>
+  </button>`;
+}
+function esc(s){return(s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+/* ---- add custom (event / prediction) ---- */
+function addCustom(kind){
+  const title=kind==='event'?'Name the event':'Add a prediction';
+  const ph=kind==='event'?'e.g. Phone call with my boss':"e.g. I'll go blank";
+  openSheet(`<h2>${title}</h2>
+    <input type="text" id="customInput" placeholder="${ph}" maxlength="80">
+    <div class="row">
+      <button class="btn btn-ghost" onclick="closeSheet()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCustom('${kind}')">Add</button>
+    </div>`);
+  setTimeout(()=>document.getElementById('customInput').focus(),100);
+}
+function saveCustom(kind){
+  const v=document.getElementById('customInput').value.trim();if(!v){closeSheet();return;}
+  if(kind==='event'){draft.title=v;draft.emoji='✦';closeSheet();renderPredict();go('predict');}
+  else{if(!draft.predictions.includes(v))draft.predictions.push(v);PREDICTIONS.push(v);closeSheet();renderPredict();}
+}
+
+/* ---- settings ---- */
+function openSettings(){
+  const n=DB.events.length;
+  openSheet(`<h2>Your data</h2>
+    <p class="quiet ui" style="font-size:14px;margin:0 0 16px;line-height:1.5">
+      Everything lives on this device only — nothing is sent anywhere, no account, no tracking.
+      ${n} event${n!==1?'s':''} saved. Export a backup so you never lose your evidence pile.</p>
+    <button class="btn btn-primary" onclick="exportData()">Export backup (.json)</button>
+    <button class="addchip" style="margin-top:12px" onclick="importData()">Restore from backup</button>
+    <input type="file" id="importFile" accept="application/json" style="display:none" onchange="doImport(event)">
+    <button class="btn btn-ghost" style="margin-top:16px" onclick="closeSheet()">Close</button>`);
+}
+function exportData(){
+  const blob=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='courage-loop-backup-'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();closeSheet();toast("Backup downloaded");
+}
+function importData(){document.getElementById('importFile').click();}
+function doImport(ev){
+  const f=ev.target.files[0];if(!f)return;const r=new FileReader();
+  r.onload=()=>{try{const d=JSON.parse(r.result);if(d&&Array.isArray(d.events)){DB=d;save();closeSheet();renderHome();toast("Backup restored");}else toast("That file didn't look right");}catch(e){toast("Couldn't read that file");}};
+  r.readAsText(f);
+}
+
+/* ---- sheet ---- */
+function openSheet(html){document.getElementById('sheetInner').innerHTML=html;
+  document.getElementById('modal').classList.add('show');}
+function closeSheet(){document.getElementById('modal').classList.remove('show');}
+document.getElementById('modal').addEventListener('click',e=>{if(e.target.id==='modal')closeSheet();});
+
+/* ---- footers (sticky next buttons) ---- */
+function mountFooters(){
+  const map={
+    'event':null,
+    'predict':{label:'Next',fn:()=>{renderCertain();go('certain');},hint:'Even one is enough. You can add your own too.'},
+    'certain':{label:'Next',fn:()=>{renderCommit();go('commit');}},
+    'commit':{label:'Lock it in',fn:finishPrepare},
+    'review':{label:'Next',fn:()=>{renderEvidence();go('evidence');}},
+    'evidence':{label:'Next',fn:()=>{renderBias();go('bias');}},
+    'bias':{label:'See what you found',fn:finishReview},
+  };
+  for(const[scr,cfg]of Object.entries(map)){
+    if(!cfg)continue;
+    const f=document.createElement('div');f.className='foot';
+    f.innerHTML=`${cfg.hint?`<div class="hint">${cfg.hint}</div>`:''}<button class="btn btn-primary">${cfg.label}</button>`;
+    f.querySelector('button').onclick=cfg.fn;
+    document.getElementById('s-'+scr).appendChild(f);
+  }
+  // home footer = start prepare
+  const hf=document.createElement('div');hf.className='foot';
+  hf.innerHTML=`<button class="btn btn-primary">Prepare for something</button>`;
+  hf.querySelector('button').onclick=startPrepare;
+  document.getElementById('s-home').appendChild(hf);
+}
+function renderCertain(){onCertain(draft.certainty);
+  document.getElementById('cSlider').value=draft.certainty;
+  document.getElementById('modeNote').textContent='';
+  [...document.getElementById('modeSeg').children].forEach(b=>b.classList.remove('sel'));
+}
+function renderCommit(){
+  [...document.getElementById('courageSeg').children].forEach(b=>b.classList.remove('sel'));
+  document.getElementById('commitNote').value='';
+}
+
+/* ---- boot ---- */
+load();mountFooters();renderHome();
+if('serviceWorker'in navigator){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+</script>
+</body>
+</html>
