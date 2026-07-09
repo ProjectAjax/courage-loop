@@ -1,5 +1,5 @@
 /* Courage Loop service worker — offline-first cache */
-const CACHE='courage-loop-v1';
+const CACHE='courage-loop-v2';
 const ASSETS=[
   './',
   './index.html',
